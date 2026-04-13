@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "dotnet:debug": "node scripts/dotnet-build.mjs Debug",
+    "dotnet:release": "node scripts/dotnet-build.mjs Release",
     "lint": "eslint .",
     "preview": "vite preview"
   },

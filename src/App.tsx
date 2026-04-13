@@ -121,9 +121,7 @@ function App() {
   const pollInFlightRef = useRef(false);
   const searchStartedAtRef = useRef<number | null>(null);
 
-  const { dotnet, loading } = useDotNet(
-    "/sdv-plugin/bin/Debug/net10.0/browser-wasm/AppBundle/_framework/dotnet.js",
-  );
+  const { dotnet, loading } = useDotNet();
 
   useEffect(() => {
     if (!searching) {
