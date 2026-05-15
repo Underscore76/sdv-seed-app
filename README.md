@@ -9,4 +9,4 @@ core tech idea from this [article](https://medium.com/@nbelyh/using-net-as-a-web
 - Build Release runtime artifacts and stage them for Vite:
 	- `npm run dotnet:release`
 
-Both commands copy `_framework` output from `sdv-plugin/bin/<Configuration>/net10.0/browser-wasm/AppBundle` into `static/dotnet-runtime`, which is served at `/dotnet-runtime`.
+Both commands copy `_framework` output from `sdv-plugin/bin/<Configuration>/net10.0/browser-wasm/AppBundle` into `public/dotnet-runtime`, which is served at `/dotnet-runtime`.
