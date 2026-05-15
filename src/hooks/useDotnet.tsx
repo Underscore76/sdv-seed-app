@@ -10,7 +10,7 @@ const loadDotnetOnce = async (): Promise<any> => {
   dotnetExportsPromise = (async () => {
     // Import from a full browser URL so Vite doesn't try to resolve static files as source modules.
     const runtimeUrl = new URL(
-      "/dotnet-runtime/dotnet.js",
+      `${import.meta.env.BASE_URL}dotnet-runtime/dotnet.js`,
       window.location.origin,
     ).href;
 
