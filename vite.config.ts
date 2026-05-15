@@ -18,6 +18,7 @@ export default defineConfig({
   preview: {
     headers: crossOriginIsolationHeaders,
   },
+  base: "/sdv-seed-app/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
