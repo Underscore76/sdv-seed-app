@@ -43,7 +43,10 @@ export default function RemixConfiguration({
         const selectedItemCount = Object.values(roomBundleSelections).reduce(
           (bundleSum, groups) =>
             bundleSum +
-            Object.values(groups).reduce((groupSum, items) => groupSum + items.length, 0),
+            Object.values(groups).reduce(
+              (groupSum, items) => groupSum + items.length,
+              0,
+            ),
           0,
         );
         const disabledItemCount = Object.values(
@@ -51,7 +54,10 @@ export default function RemixConfiguration({
         ).reduce(
           (bundleSum, groups) =>
             bundleSum +
-            Object.values(groups).reduce((groupSum, items) => groupSum + items.length, 0),
+            Object.values(groups).reduce(
+              (groupSum, items) => groupSum + items.length,
+              0,
+            ),
           0,
         );
 
@@ -78,7 +84,9 @@ export default function RemixConfiguration({
                   <h3 className="text-lg font-semibold">{room.room}</h3>
                   {!isExpanded ? (
                     <p className="text-xs text-muted-foreground">
-                      Bundles: {selectedBundleCount} selected, {disabledBundleCount} disabled | Items: {selectedItemCount} selected, {disabledItemCount} disabled
+                      Bundles: {selectedBundleCount} selected,{" "}
+                      {disabledBundleCount} disabled | Items:{" "}
+                      {selectedItemCount} selected, {disabledItemCount} disabled
                     </p>
                   ) : null}
                 </div>
