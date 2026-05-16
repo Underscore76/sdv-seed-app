@@ -1,3 +1,4 @@
+// https://github.com/gzuidhof/coi-serviceworker/blob/master/coi-serviceworker.js
 // Cross-origin isolation shim for static hosting (for SharedArrayBuffer / WASM threads).
 (() => {
   if (typeof window === "undefined") {

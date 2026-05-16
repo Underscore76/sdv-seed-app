@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "sdv-plugin.dll",
   "resources": {
-    "hash": "sha256-VwicZCkVe2bPKhPY1Fi0YOeVfn/KMPXLH0UgvVdBnUs=",
+    "hash": "sha256-kEe76ifEvFl/zaNXpO14LhDeHYTd9PPG0nKW+1F6Rlg=",
     "jsModuleWorker": [
       {
         "name": "dotnet.native.worker.mjs"
@@ -931,14 +931,14 @@ export const config = /*json-start*/{
       {
         "virtualPath": "sdv-plugin.wasm",
         "name": "sdv-plugin.wasm",
-        "integrity": "sha256-FUoSNBpXlOLAphKPWNLrxwZRGwnwnN9ypUnUv6neg1E="
+        "integrity": "sha256-JqrgA5bh+N8Y/Q/5fwh4hFLKNsGtf80CLV49ZtnYH1M="
       }
     ],
     "pdb": [
       {
         "virtualPath": "sdv-plugin.pdb",
         "name": "sdv-plugin.pdb",
-        "integrity": "sha256-Mnsg5wEUV6MgtnQ6NvZhGxxojHe8zyPbDCh5AQG8dYg="
+        "integrity": "sha256-1vKlHdBMBWDJ5ScYOXvqUBXQWlZz0Ebk/O6Fuko3SZk="
       }
     ]
   },
