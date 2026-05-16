@@ -303,6 +303,7 @@ function App() {
                   enabledFlags: remixConfigState.payload.enabledFlags,
                   disabledFlags: remixConfigState.payload.disabledFlags,
                   useLegacyRandom,
+                  version: "1.6",
                 })
               }
             >
@@ -325,7 +326,13 @@ function App() {
               {searchProgress ? (
                 <p className="text-xs text-muted-foreground">
                   Progress: {searchProgress.seedsFound} seeds found,{" "}
-                  {searchProgress.processedChunks} chunks scanned
+                  {searchProgress.processedChunks} chunks scanned (
+                  {(
+                    (searchProgress.processedChunks /
+                      searchProgress.totalChunks) *
+                    100
+                  ).toFixed(2)}
+                  %)
                 </p>
               ) : null}
             </div>

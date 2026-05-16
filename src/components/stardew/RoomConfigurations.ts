@@ -172,7 +172,7 @@ const ROOM_CONFIGS_1_6: RoomDefinition[] = [
           {
             id: "Quality Crops",
             name: "Quality Crops",
-            flag: "PANTRY_QUALITY_CROPS",
+            flag: "PANTRY_QUALITY",
             optionGroups: [
               {
                 id: "pantry-quality-spring",
@@ -257,7 +257,7 @@ const ROOM_CONFIGS_1_6: RoomDefinition[] = [
               },
             ],
           },
-          { id: "Rare Crops", name: "Rare Crops", flag: "PANTRY_RARE_CROPS" },
+          { id: "Rare Crops", name: "Rare Crops", flag: "PANTRY_RARE" },
         ],
       },
       {

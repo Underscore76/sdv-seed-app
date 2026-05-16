@@ -14,6 +14,8 @@ namespace SeedFinding;
 public partial class SearchFunctions
 {
     private const int MaxAllowedSeedResults = 10000;
+    private const int CHUNK_SIZE = 50_000;
+    private const long maxSeedExclusive = (long)int.MaxValue + 1;
     private static readonly ConcurrentDictionary<string, SeedSearchJob> SeedSearchJobs = new();
 
     private sealed class SeedSearchJob
@@ -99,6 +101,7 @@ public partial class SearchFunctions
                 {
                     seedsFound = Volatile.Read(ref job.FoundCount),
                     processedChunks = Volatile.Read(ref job.ProcessedChunks),
+                    totalChunks = (maxSeedExclusive / CHUNK_SIZE) + 1, // based on chunk size in RunSeedSearchAsync
                     workersRequested = job.WorkerCount,
                     threadsUsed = job.ThreadIds.Count,
                 },
@@ -162,8 +165,7 @@ public partial class SearchFunctions
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
     private static async Task RunSeedSearchAsync(SeedSearchJob job, RemixSearchRequest searchRequest)
     {
-        const long maxSeedExclusive = (long)int.MaxValue + 1;
-        const int chunkSize = 50_000;
+        searchRequest.Initialize();
         const int chunksPerYield = 2;
         long nextSeed = 0;
 
@@ -176,7 +178,7 @@ public partial class SearchFunctions
                 {
                     while (!job.CancellationTokenSource.IsCancellationRequested)
                     {
-                        long chunkStart = Interlocked.Add(ref nextSeed, chunkSize) - chunkSize;
+                        long chunkStart = Interlocked.Add(ref nextSeed, CHUNK_SIZE) - CHUNK_SIZE;
                         if (chunkStart >= maxSeedExclusive)
                         {
                             break;
@@ -185,7 +187,7 @@ public partial class SearchFunctions
                         int threadId = Thread.CurrentThread.ManagedThreadId;
                         job.ThreadIds.TryAdd(threadId, 0);
 
-                        long chunkEnd = Math.Min(chunkStart + chunkSize, maxSeedExclusive);
+                        long chunkEnd = Math.Min(chunkStart + CHUNK_SIZE, maxSeedExclusive);
 
                         for (long candidate = chunkStart; candidate < chunkEnd; candidate++)
                         {

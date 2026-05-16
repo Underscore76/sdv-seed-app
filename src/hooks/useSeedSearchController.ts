@@ -100,10 +100,10 @@ export function useSeedSearchController({
           useAutoWorkers,
           maxRequestableWorkers,
         );
+        const searchJson = JSON.stringify(payload);
 
         const startRaw = (await searchFunctions.StartSeedSearch(
-          useLegacyRandom,
-          payload,
+          searchJson,
           safeMaxResults,
           safeRequestedWorkers,
         )) as string;

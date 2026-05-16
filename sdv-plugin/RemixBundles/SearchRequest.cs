@@ -5,6 +5,7 @@ namespace sdv_plugin.remixedbundles;
 
 public class RemixSearchRequest
 {
+    public string version;
     public bool useLegacyRandom;
     public List<string> enabledFlags;
     public List<string> disabledFlags;
@@ -13,6 +14,7 @@ public class RemixSearchRequest
 
     public void Initialize()
     {
+        RemixedBundles.SetVersion(version);
         requiredFlags = RemixedBundles.CollapseFlags(enabledFlags);
         excludedFlags = RemixedBundles.CollapseFlags(disabledFlags);
     }

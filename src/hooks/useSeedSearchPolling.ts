@@ -8,6 +8,7 @@ export type SearchDebugInfo = {
 export type SearchProgress = {
   seedsFound: number;
   processedChunks: number;
+  totalChunks: number;
   workersRequested: number;
   threadsUsed: number;
 };

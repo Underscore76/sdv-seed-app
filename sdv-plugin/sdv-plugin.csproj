@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WasmMainJSPath>./main.js</WasmMainJSPath>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <NoWarn>NU1701;NETSDK1138;IL2026</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
