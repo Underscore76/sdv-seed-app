@@ -16,6 +16,10 @@ public static class Utility
     {
         return FastRandom.createFR(Utility.CreateRandomSeed(useLegacyRandom, seedA, seedB, seedC, seedD, seedE));
     }
+    public static Random CreateSlowRandom(bool useLegacyRandom, double seedA, double seedB = 0.0, double seedC = 0.0, double seedD = 0.0, double seedE = 0.0)
+    {
+        return new Random(Utility.CreateRandomSeed(useLegacyRandom, seedA, seedB, seedC, seedD, seedE));
+    }
 
     public static int CreateRandomSeed(bool useLegacyRandom, double seedA, double seedB, double seedC = 0.0, double seedD = 0.0, double seedE = 0.0)
     {

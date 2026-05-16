@@ -6,18 +6,19 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using sdv_plugin.remixedbundles;
 using SeedFinding.NightEvents;
 
 namespace SeedFinding;
 
 public partial class SearchFunctions
 {
-    private const int MaxAllowedFairySeedResults = 10000;
-    private static readonly ConcurrentDictionary<string, FairySearchJob> FairySearchJobs = new();
+    private const int MaxAllowedSeedResults = 10000;
+    private static readonly ConcurrentDictionary<string, SeedSearchJob> SeedSearchJobs = new();
 
-    private sealed class FairySearchJob
+    private sealed class SeedSearchJob
     {
-        internal FairySearchJob(int workerCount, int targetCount, CancellationTokenSource cancellationTokenSource)
+        internal SeedSearchJob(int workerCount, int targetCount, CancellationTokenSource cancellationTokenSource)
         {
             WorkerCount = workerCount;
             TargetCount = targetCount;
@@ -54,34 +55,22 @@ public partial class SearchFunctions
 
     [JSExport]
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
-    internal static Task<string> StartFairySeedSearch(bool useLegacyRandom, int day, int maxResults, int requestedWorkers)
+    internal static Task<string> StartSeedSearch(string searchJson, int maxResults, int requestedWorkers)
     {
         int availableWorkers = Math.Max(1, Environment.ProcessorCount);
         int workerCount = requestedWorkers <= 0
             ? availableWorkers
             : Math.Clamp(requestedWorkers, 1, availableWorkers);
-        int targetCount = Math.Clamp(maxResults, 1, MaxAllowedFairySeedResults);
+        int targetCount = Math.Clamp(maxResults, 1, MaxAllowedSeedResults);
         string searchId = Guid.NewGuid().ToString("N");
 
         CancellationTokenSource cts = new();
-        FairySearchJob job = new(workerCount, targetCount, cts);
+        SeedSearchJob job = new(workerCount, targetCount, cts);
 
-        if (day <= 1)
-        {
-            job.FinalSeeds = Array.Empty<int>();
-            job.Status = "completed";
-            FairySearchJobs[searchId] = job;
-            var earlyStartResponse = new
-            {
-                status = "started",
-                searchId,
-                workersRequested = workerCount,
-            };
-            return Task.FromResult(JsonConvert.SerializeObject(earlyStartResponse));
-        }
+        var searchRequest = JsonConvert.DeserializeObject<RemixSearchRequest>(searchJson);
 
-        FairySearchJobs[searchId] = job;
-        job.SearchTask = Task.Run(() => RunFairySeedSearchAsync(job, useLegacyRandom, day));
+        SeedSearchJobs[searchId] = job;
+        job.SearchTask = Task.Run(() => RunSeedSearchAsync(job, searchRequest));
 
         var startResponse = new
         {
@@ -94,9 +83,9 @@ public partial class SearchFunctions
 
     [JSExport]
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
-    internal static Task<string> GetFairySeedSearchStatus(string searchId)
+    internal static Task<string> GetSeedSearchStatus(string searchId)
     {
-        if (!FairySearchJobs.TryGetValue(searchId, out FairySearchJob job))
+        if (!SeedSearchJobs.TryGetValue(searchId, out SeedSearchJob job))
         {
             return Task.FromResult(JsonConvert.SerializeObject(new { status = "not_found" }));
         }
@@ -145,9 +134,9 @@ public partial class SearchFunctions
 
     [JSExport]
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
-    internal static Task<string> CancelFairySeedSearch(string searchId)
+    internal static Task<string> CancelSeedSearch(string searchId)
     {
-        if (!FairySearchJobs.TryGetValue(searchId, out FairySearchJob job))
+        if (!SeedSearchJobs.TryGetValue(searchId, out SeedSearchJob job))
         {
             return Task.FromResult(JsonConvert.SerializeObject(new { status = "not_found" }));
         }
@@ -171,7 +160,7 @@ public partial class SearchFunctions
     }
 
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
-    private static async Task RunFairySeedSearchAsync(FairySearchJob job, bool useLegacyRandom, int day)
+    private static async Task RunSeedSearchAsync(SeedSearchJob job, RemixSearchRequest searchRequest)
     {
         const long maxSeedExclusive = (long)int.MaxValue + 1;
         const int chunkSize = 50_000;
@@ -205,8 +194,8 @@ public partial class SearchFunctions
                                 return;
                             }
 
-                            bool isFairy = NightEvent1_6.GetEvent(useLegacyRandom, candidate, day) == NightEvent1_6.Event.Fairy;
-                            if (!isFairy)
+                            bool isValid = searchRequest.IsValid((int)candidate);
+                            if (!isValid)
                             {
                                 continue;
                             }

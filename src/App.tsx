@@ -1,42 +1,21 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { List, type RowComponentProps } from "react-window";
 import { useDotNet } from "./hooks/useDotnet";
+import {
+  useSeedSearchPolling,
+  type SearchDebugInfo,
+  type SearchProgress,
+  type SearchStatusResponse,
+} from "./hooks/useSeedSearchPolling";
+import { useSeedSearchController } from "./hooks/useSeedSearchController";
+import { useThreadSettings } from "./hooks/useThreadSettings";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
 import { Switch } from "./components/ui/switch";
-
-type SearchDebugInfo = {
-  workersRequested: number;
-  threadsUsed: number;
-};
-
-type StartSearchResponse = {
-  status: "started" | "failed";
-  searchId?: string;
-  workersRequested?: number;
-  error?: string;
-};
-
-type SearchProgress = {
-  seedsFound: number;
-  processedChunks: number;
-  workersRequested: number;
-  threadsUsed: number;
-};
-
-type SearchStatusResponse = {
-  status: "running" | "completed" | "cancelled" | "failed" | "not_found";
-  seeds?: number[];
-  debug?: SearchDebugInfo;
-  progress?: SearchProgress;
-  error?: string;
-};
-
-type ThreadSettings = {
-  maxRequestableWorkers: number;
-  defaultWorkers: number;
-};
+import RemixConfiguration from "./components/stardew/remix";
+import { ROOM_CONFIGS_1_6 as ROOM_CONFIGS } from "./components/stardew/RoomConfigurations";
+import { useRemixConfigState } from "./components/stardew/useRemixConfigState";
 
 const RESULTS_LIST_HEIGHT = 320;
 const RESULTS_ROW_HEIGHT = 36;
@@ -99,29 +78,80 @@ const ResultsPanel = memo(function ResultsPanel({
 });
 
 function App() {
-  const [numbers, setNumbers] = useState<number[]>([]);
-  const [useLegacyRandom, setUseLegacyRandom] = useState(false);
-  const [dayInput, setDayInput] = useState("2");
+  const [seeds, setSeeds] = useState<number[]>([]);
+  const [useLegacyRandom, setUseLegacyRandom] = useState(false); // live option
   const [maxResultsInput, setMaxResultsInput] = useState("10000");
+  const [resultLegacyRandom, setResultLegacyRandom] = useState(false); // what was used for the last search
+  const remixConfigState = useRemixConfigState(ROOM_CONFIGS);
+  const { dotnet, loading } = useDotNet();
+  // worker/threading setup
   const [useAutoWorkers, setUseAutoWorkers] = useState(true);
   const [workerCountInput, setWorkerCountInput] = useState("");
-  const [threadSettings, setThreadSettings] = useState<ThreadSettings | null>(
-    null,
-  );
+  const threadSettings = useThreadSettings(dotnet);
+  // state for search status
   const [searching, setSearching] = useState(false);
   const [activeSearchId, setActiveSearchId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [lastElapsedMs, setLastElapsedMs] = useState<number | null>(null);
-  const [resultLegacyRandom, setResultLegacyRandom] = useState(false);
   const [debugInfo, setDebugInfo] = useState<SearchDebugInfo | null>(null);
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(
     null,
   );
-  const pollInFlightRef = useRef(false);
   const searchStartedAtRef = useRef<number | null>(null);
 
-  const { dotnet, loading } = useDotNet();
+  const clearSearchResults = useCallback(() => {
+    setSeeds([]);
+    setDebugInfo(null);
+  }, []);
+
+  const finalizeSearch = useCallback(() => {
+    if (searchStartedAtRef.current !== null) {
+      const totalElapsed = performance.now() - searchStartedAtRef.current;
+      setElapsedMs(totalElapsed);
+      setLastElapsedMs(totalElapsed);
+    }
+
+    searchStartedAtRef.current = null;
+    setSearching(false);
+    setActiveSearchId(null);
+    setSearchProgress(null);
+  }, []);
+
+  const handlePollingProgress = useCallback((progress: SearchProgress) => {
+    setSearchProgress(progress);
+    setDebugInfo({
+      workersRequested: progress.workersRequested,
+      threadsUsed: progress.threadsUsed,
+    });
+  }, []);
+
+  const handlePollingCompleted = useCallback((status: SearchStatusResponse) => {
+    setSeeds(status.seeds ?? []);
+    setDebugInfo(status.debug ?? null);
+
+    if (status.status === "cancelled") {
+      setError((prev) => prev ?? "Search cancelled.");
+    }
+  }, []);
+
+  const handlePollingFailed = useCallback(
+    (message: string) => {
+      setError(message);
+      clearSearchResults();
+    },
+    [clearSearchResults],
+  );
+
+  useSeedSearchPolling({
+    dotnet,
+    searching,
+    activeSearchId,
+    onProgress: handlePollingProgress,
+    onCompleted: handlePollingCompleted,
+    onFailed: handlePollingFailed,
+    onFinalize: finalizeSearch,
+  });
 
   useEffect(() => {
     if (!searching) {
@@ -141,226 +171,39 @@ function App() {
     return () => window.clearInterval(interval);
   }, [searching]);
 
-  useEffect(() => {
-    if (!dotnet) {
-      return;
-    }
-
-    const loadThreadSettings = async () => {
-      try {
-        const result =
-          (await dotnet.SeedFinding.SearchFunctions.GetThreadSettings()) as string;
-        const parsed = JSON.parse(result) as ThreadSettings;
-        setThreadSettings(parsed);
-      } catch {
-        setThreadSettings(null);
-      }
-    };
-
-    void loadThreadSettings();
-  }, [dotnet]);
-
-  useEffect(() => {
-    if (!dotnet || !searching || !activeSearchId) {
-      return;
-    }
-
-    const finalizeSearch = () => {
-      if (searchStartedAtRef.current !== null) {
-        const totalElapsed = performance.now() - searchStartedAtRef.current;
-        setElapsedMs(totalElapsed);
-        setLastElapsedMs(totalElapsed);
-      }
-      searchStartedAtRef.current = null;
-      setSearching(false);
+  const { runSearch, cancelSearch } = useSeedSearchController({
+    dotnet,
+    useLegacyRandom,
+    maxResultsInput,
+    workerCountInput,
+    useAutoWorkers,
+    maxRequestableWorkers: threadSettings?.maxRequestableWorkers,
+    activeSearchId,
+    onBeforeStart: () => {
+      setSearching(true);
       setActiveSearchId(null);
-      setSearchProgress(null);
-    };
-
-    const interval = window.setInterval(async () => {
-      if (pollInFlightRef.current) {
-        return;
-      }
-
-      pollInFlightRef.current = true;
-      try {
-        const searchFunctions = dotnet?.SeedFinding?.SearchFunctions;
-        if (
-          !searchFunctions ||
-          typeof searchFunctions.GetFairySeedSearchStatus !== "function"
-        ) {
-          throw new Error(
-            "Search API export 'GetFairySeedSearchStatus' was not found. Rebuild sdv-plugin and hard refresh the browser.",
-          );
-        }
-
-        const statusRaw = (await searchFunctions.GetFairySeedSearchStatus(
-          activeSearchId,
-        )) as string;
-        const status = JSON.parse(statusRaw) as SearchStatusResponse;
-
-        if (status.status === "running") {
-          if (status.progress) {
-            setSearchProgress(status.progress);
-            setDebugInfo({
-              workersRequested: status.progress.workersRequested,
-              threadsUsed: status.progress.threadsUsed,
-            });
-          }
-          return;
-        }
-
-        if (status.status === "completed" || status.status === "cancelled") {
-          setNumbers(status.seeds ?? []);
-          setDebugInfo(status.debug ?? null);
-          if (status.status === "cancelled" && !error) {
-            setError("Search cancelled.");
-          }
-          finalizeSearch();
-          return;
-        }
-
-        if (status.status === "failed") {
-          setNumbers([]);
-          setDebugInfo(null);
-          setError(status.error ?? "Search failed.");
-          finalizeSearch();
-          return;
-        }
-
-        setNumbers([]);
-        setDebugInfo(null);
-        setError("Search not found or expired.");
-        finalizeSearch();
-      } catch (err) {
-        const details = err instanceof Error ? err.message : String(err);
-        setError(`Could not poll search status: ${details}`);
-        setNumbers([]);
-        setDebugInfo(null);
-        finalizeSearch();
-      } finally {
-        pollInFlightRef.current = false;
-      }
-    }, 200);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [dotnet, searching, activeSearchId, error]);
-
-  const runSearch = async () => {
-    if (!dotnet) {
-      return;
-    }
-
-    setSearching(true);
-    setActiveSearchId(null);
-    setElapsedMs(0);
-    setLastElapsedMs(null);
-    setError(null);
-    setNumbers([]);
-    setDebugInfo(null);
-    setSearchProgress(null);
-    setResultLegacyRandom(useLegacyRandom);
-    searchStartedAtRef.current = performance.now();
-
-    // Allow the UI to paint the loading state before starting heavy work.
-    await new Promise<void>((resolve) =>
-      window.requestAnimationFrame(() => resolve()),
-    );
-
-    try {
-      const searchFunctions = dotnet?.SeedFinding?.SearchFunctions;
-      if (
-        !searchFunctions ||
-        typeof searchFunctions.StartFairySeedSearch !== "function"
-      ) {
-        throw new Error(
-          "Search API export 'StartFairySeedSearch' was not found. Rebuild sdv-plugin and hard refresh the browser.",
-        );
-      }
-
-      const parsedDay = Number(dayInput);
-      const parsedMaxResults = Number(maxResultsInput);
-      const safeDay = Math.max(
-        1,
-        Number.isFinite(parsedDay) ? Math.trunc(parsedDay) : 1,
-      );
-      const safeMaxResults = Math.max(
-        1,
-        Number.isFinite(parsedMaxResults) ? Math.trunc(parsedMaxResults) : 1,
-      );
-
-      const parsedWorkers = Number(workerCountInput);
-      const requestedWorkers = useAutoWorkers
-        ? 0
-        : workerCountInput.trim()
-          ? Number.isFinite(parsedWorkers)
-            ? Math.trunc(parsedWorkers)
-            : 0
-          : 0;
-
-      const safeRequestedWorkers = threadSettings
-        ? Math.min(
-            Math.max(requestedWorkers, 0),
-            threadSettings.maxRequestableWorkers,
-          )
-        : Math.max(requestedWorkers, 0);
-
-      const startRaw = (await searchFunctions.StartFairySeedSearch(
-        useLegacyRandom,
-        safeDay,
-        safeMaxResults,
-        safeRequestedWorkers,
-      )) as string;
-      const startResponse = JSON.parse(startRaw) as StartSearchResponse;
-
-      if (startResponse.status !== "started" || !startResponse.searchId) {
-        throw new Error(startResponse.error ?? "Failed to start search.");
-      }
-
-      setDebugInfo({
-        workersRequested: startResponse.workersRequested ?? 0,
-        threadsUsed: 0,
-      });
-      setActiveSearchId(startResponse.searchId);
-    } catch (err) {
-      const details = err instanceof Error ? err.message : String(err);
-      setError(`Could not start fairy seed search: ${details}`);
-      setNumbers([]);
+      setElapsedMs(0);
+      setLastElapsedMs(null);
+      setError(null);
+      setSeeds([]);
       setDebugInfo(null);
-      setActiveSearchId(null);
-      setSearching(false);
-      if (searchStartedAtRef.current !== null) {
-        const totalElapsed = performance.now() - searchStartedAtRef.current;
-        setElapsedMs(totalElapsed);
-        setLastElapsedMs(totalElapsed);
-      }
-      searchStartedAtRef.current = null;
-    }
-  };
-
-  const cancelSearch = async () => {
-    if (!dotnet || !activeSearchId) {
-      return;
-    }
-
-    try {
-      const searchFunctions = dotnet?.SeedFinding?.SearchFunctions;
-      if (
-        !searchFunctions ||
-        typeof searchFunctions.CancelFairySeedSearch !== "function"
-      ) {
-        throw new Error(
-          "Search API export 'CancelFairySeedSearch' was not found. Rebuild sdv-plugin and hard refresh the browser.",
-        );
-      }
-
-      await searchFunctions.CancelFairySeedSearch(activeSearchId);
-    } catch {
+      setSearchProgress(null);
+      setResultLegacyRandom(useLegacyRandom);
+      searchStartedAtRef.current = performance.now();
+    },
+    onStartSuccess: (searchId, initialDebugInfo) => {
+      setDebugInfo(initialDebugInfo);
+      setActiveSearchId(searchId);
+    },
+    onStartError: (message) => {
+      setError(message);
+      clearSearchResults();
+      finalizeSearch();
+    },
+    onCancelError: () => {
       setError("Could not cancel search.");
-    }
-  };
+    },
+  });
 
   const isBusy = loading || searching;
 
@@ -371,52 +214,13 @@ function App() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Fairy Seed Finder</h1>
+        <h1 className="text-2xl font-semibold">Remixed Bundle Search</h1>
         <p className="text-sm text-muted-foreground">
-          Select search options and find seeds that trigger a fairy event.
+          Find seeds with specific bundle contents (for version 1.6)
         </p>
       </div>
 
-      <section className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="auto-workers">Use automatic worker count</Label>
-            <p className="text-xs text-muted-foreground">
-              Auto uses the runtime default worker count.
-            </p>
-          </div>
-          <Switch
-            id="auto-workers"
-            checked={useAutoWorkers}
-            disabled={isBusy}
-            onCheckedChange={setUseAutoWorkers}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="worker-count-input">Worker threads</Label>
-          <Input
-            id="worker-count-input"
-            disabled={isBusy || useAutoWorkers}
-            type="number"
-            min={1}
-            max={threadSettings?.maxRequestableWorkers}
-            placeholder={
-              threadSettings ? `${threadSettings.defaultWorkers}` : "Auto"
-            }
-            value={workerCountInput}
-            onChange={(e) => setWorkerCountInput(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            {useAutoWorkers
-              ? "Auto mode is enabled."
-              : "Manual mode is enabled."}
-            {threadSettings
-              ? ` Max requestable: ${threadSettings.maxRequestableWorkers}.`
-              : ""}
-          </p>
-        </div>
-      </section>
+      <RemixConfiguration roomConfigs={ROOM_CONFIGS} {...remixConfigState} />
 
       <section className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -436,19 +240,7 @@ function App() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="day-input">Day</Label>
-            <Input
-              id="day-input"
-              disabled={isBusy}
-              type="number"
-              min={1}
-              value={dayInput}
-              onChange={(e) => setDayInput(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="max-results-input">Max fairy seeds</Label>
+            <Label htmlFor="max-results-input">Max seeds to return</Label>
             <Input
               id="max-results-input"
               disabled={isBusy}
@@ -461,10 +253,60 @@ function App() {
           </div>
         </div>
 
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="auto-workers">Use automatic worker count</Label>
+            <p className="text-xs text-muted-foreground">
+              Use maximum number of threads for your system.
+            </p>
+          </div>
+          <Switch
+            id="auto-workers"
+            checked={useAutoWorkers}
+            disabled={isBusy}
+            onCheckedChange={setUseAutoWorkers}
+          />
+        </div>
+
+        {!useAutoWorkers && (
+          <div className="space-y-2">
+            <Label htmlFor="worker-count-input">Worker threads</Label>
+            <Input
+              id="worker-count-input"
+              disabled={isBusy || useAutoWorkers}
+              type="number"
+              min={1}
+              max={threadSettings?.maxRequestableWorkers}
+              placeholder={
+                threadSettings ? `${threadSettings.defaultWorkers}` : "Auto"
+              }
+              value={workerCountInput}
+              onChange={(e) => setWorkerCountInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {useAutoWorkers
+                ? "Auto mode is enabled."
+                : "Manual mode is enabled."}
+              {threadSettings
+                ? ` Max requestable: ${threadSettings.maxRequestableWorkers}.`
+                : ""}
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
           {!searching ? (
-            <Button disabled={isBusy} onClick={runSearch}>
-              Find Fairy Seeds
+            <Button
+              disabled={isBusy}
+              onClick={() =>
+                runSearch({
+                  enabledFlags: remixConfigState.payload.enabledFlags,
+                  disabledFlags: remixConfigState.payload.disabledFlags,
+                  useLegacyRandom,
+                })
+              }
+            >
+              Search bundles
             </Button>
           ) : (
             <Button
@@ -507,7 +349,7 @@ function App() {
           </p>
         </section>
       ) : null}
-      <ResultsPanel numbers={numbers} resultLegacyRandom={resultLegacyRandom} />
+      <ResultsPanel numbers={seeds} resultLegacyRandom={resultLegacyRandom} />
     </main>
   );
 }
