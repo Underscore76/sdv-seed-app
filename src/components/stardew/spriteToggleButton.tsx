@@ -6,8 +6,10 @@ type SpriteToggleButtonProps = {
   spriteSheetIndex: SpriteSheetIndex;
   id?: string;
   pressed?: boolean;
+  disabledState?: boolean;
   defaultPressed?: boolean;
   onPressedChange?: (pressed: boolean) => void;
+  onDisabledStateChange?: (disabledState: boolean) => void;
   size?: number;
   className?: string;
 };
@@ -17,8 +19,10 @@ export default function SpriteToggleButton({
   spriteSheetIndex,
   id,
   pressed,
+  disabledState = false,
   defaultPressed = false,
   onPressedChange,
+  onDisabledStateChange,
   size = 64,
   className = "",
 }: SpriteToggleButtonProps) {
@@ -27,6 +31,10 @@ export default function SpriteToggleButton({
   const isPressed = isControlled ? pressed : internalPressed;
 
   const handleToggle = () => {
+    if (disabledState) {
+      return;
+    }
+
     const nextPressed = !isPressed;
     if (!isControlled) {
       setInternalPressed(nextPressed);
@@ -34,11 +42,20 @@ export default function SpriteToggleButton({
     onPressedChange?.(nextPressed);
   };
 
+  const handleContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    onDisabledStateChange?.(!disabledState);
+  };
+
   const buttonClasses = [
     "inline-flex select-none items-center justify-center rounded-md border-2 border-[#7f6a44] p-1",
     "cursor-pointer transition-[transform,box-shadow] duration-[120ms] ease-out",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4b89dc]",
-    isPressed ? "translate-y-px bg-[#03A007]" : "translate-y-0 bg-[#DDA059]",
+    disabledState
+      ? "translate-y-0 border-[#913838] bg-[#a53f3f] opacity-70"
+      : isPressed
+        ? "translate-y-px bg-[#03A007]"
+        : "translate-y-0 bg-[#DDA059]",
     className,
   ].join(" ");
 
@@ -48,6 +65,7 @@ export default function SpriteToggleButton({
       type="button"
       className={buttonClasses}
       onClick={handleToggle}
+      onContextMenu={handleContextMenu}
       aria-pressed={isPressed}
       title={label}
     >

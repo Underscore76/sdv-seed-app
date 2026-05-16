@@ -9,8 +9,10 @@ type ObjectToggleButtonProps = {
   objectId: string;
   id?: string;
   pressed?: boolean;
+  disabledState?: boolean;
   defaultPressed?: boolean;
   onPressedChange?: (pressed: boolean) => void;
+  onDisabledStateChange?: (disabledState: boolean) => void;
   size?: number;
   className?: string;
 };
@@ -41,8 +43,10 @@ export default function ObjectToggleButton({
   objectId,
   id,
   pressed,
+  disabledState = false,
   defaultPressed = false,
   onPressedChange,
+  onDisabledStateChange,
   size = 64,
   className = "",
 }: ObjectToggleButtonProps) {
@@ -59,8 +63,10 @@ export default function ObjectToggleButton({
       spriteSheetIndex={spriteSheetIndex}
       id={id}
       pressed={pressed}
+      disabledState={disabledState}
       defaultPressed={defaultPressed}
       onPressedChange={onPressedChange}
+      onDisabledStateChange={onDisabledStateChange}
       size={size}
       className={className}
     />

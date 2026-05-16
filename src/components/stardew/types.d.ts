@@ -55,9 +55,16 @@ type RemixSearchPayload = {
 
 type OptionalBundleSelectionsByRoom = Record<string, Record<string, string[]>>;
 
+type OptionalBundleDisabledByRoom = Record<string, Record<string, string[]>>;
+
 type BundleOptionGroupSelections = Record<string, string[]>;
 
 type BundleOptionSelectionsByRoom = Record<
+  string,
+  Record<string, BundleOptionGroupSelections>
+>;
+
+type BundleOptionDisabledByRoom = Record<
   string,
   Record<string, BundleOptionGroupSelections>
 >;

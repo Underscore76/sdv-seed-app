@@ -90,6 +90,16 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
       getInitialOptionSelections(roomConfigs),
     );
 
+  const [disabledOptionalBundles, setDisabledOptionalBundles] =
+    useState<OptionalBundleDisabledByRoom>(() =>
+      getDefaultOptionalSelection(roomConfigs),
+    );
+
+  const [disabledBundleOptionSelections, setDisabledBundleOptionSelections] =
+    useState<BundleOptionDisabledByRoom>(() =>
+      getInitialOptionSelections(roomConfigs),
+    );
+
   const [isRemixExpanded, setIsRemixExpanded] = useState(true);
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
 
@@ -130,6 +140,15 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     pickLimit: number,
     optionId: string,
   ) => {
+    const isDisabled = (
+      disabledBundleOptionSelections[room.room]?.[bundle.id]?.[optionGroupId] ??
+      []
+    ).includes(optionId);
+
+    if (isDisabled) {
+      return;
+    }
+
     setBundleOptionSelections((prev) => {
       const roomSelections = prev[room.room] ?? {};
       const bundleSelections = roomSelections[bundle.id] ?? {};
@@ -157,6 +176,64 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     });
   };
 
+  const toggleBundleOptionDisabled = (
+    room: RoomDefinition,
+    bundle: BundleDefinition,
+    optionGroupId: string,
+    pickLimit: number,
+    optionId: string,
+    totalOptions: number,
+  ) => {
+    const maxDisabled = Math.max(totalOptions - pickLimit, 0);
+
+    setDisabledBundleOptionSelections((prev) => {
+      const roomSelections = prev[room.room] ?? {};
+      const bundleSelections = roomSelections[bundle.id] ?? {};
+      const current = bundleSelections[optionGroupId] ?? [];
+      const isDisabled = current.includes(optionId);
+
+      if (!isDisabled && current.length >= maxDisabled) {
+        return prev;
+      }
+
+      const nextSelection = isDisabled
+        ? current.filter((id) => id !== optionId)
+        : [...current, optionId];
+
+      return {
+        ...prev,
+        [room.room]: {
+          ...roomSelections,
+          [bundle.id]: {
+            ...bundleSelections,
+            [optionGroupId]: nextSelection,
+          },
+        },
+      };
+    });
+
+    setBundleOptionSelections((prev) => {
+      const roomSelections = prev[room.room] ?? {};
+      const bundleSelections = roomSelections[bundle.id] ?? {};
+      const current = bundleSelections[optionGroupId] ?? [];
+
+      if (!current.includes(optionId)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [room.room]: {
+          ...roomSelections,
+          [bundle.id]: {
+            ...bundleSelections,
+            [optionGroupId]: current.filter((id) => id !== optionId),
+          },
+        },
+      };
+    });
+  };
+
   const selectOptionalBundle = (
     roomName: string,
     groupId: string,
@@ -164,6 +241,14 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     pickLimit: number,
     nextPressed: boolean,
   ) => {
+    const isDisabled = (
+      disabledOptionalBundles[roomName]?.[groupId] ?? []
+    ).includes(bundleId);
+
+    if (nextPressed && isDisabled) {
+      return;
+    }
+
     setSelectedOptionalBundles((prev) => {
       const roomSelection = prev[roomName] ?? {};
       const current = roomSelection[groupId] ?? [];
@@ -207,6 +292,53 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     });
   };
 
+  const toggleOptionalBundleDisabled = (
+    roomName: string,
+    groupId: string,
+    bundleId: string,
+    pickLimit: number,
+    totalBundles: number,
+  ) => {
+    const maxDisabled = Math.max(totalBundles - pickLimit, 0);
+
+    setDisabledOptionalBundles((prev) => {
+      const roomSelection = prev[roomName] ?? {};
+      const current = roomSelection[groupId] ?? [];
+      const isDisabled = current.includes(bundleId);
+
+      if (!isDisabled && current.length >= maxDisabled) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [roomName]: {
+          ...roomSelection,
+          [groupId]: isDisabled
+            ? current.filter((id) => id !== bundleId)
+            : [...current, bundleId],
+        },
+      };
+    });
+
+    setSelectedOptionalBundles((prev) => {
+      const roomSelection = prev[roomName] ?? {};
+      const current = roomSelection[groupId] ?? [];
+
+      if (!current.includes(bundleId)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [roomName]: {
+          ...roomSelection,
+          [groupId]: current.filter((id) => id !== bundleId),
+        },
+      };
+    });
+  };
+
   const toggleRoomExpanded = (roomName: string) => {
     setExpandedRooms((prev) => ({
       ...prev,
@@ -241,6 +373,7 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     });
 
     const enabledFlags: string[] = [];
+    const disabledFlags: string[] = [];
 
     for (const room of rooms) {
       const bundleMap = bundleByRoomAndId[room.room] ?? {};
@@ -266,14 +399,49 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
       }
     }
 
+    for (const room of roomConfigs) {
+      const roomDisabledBundles = disabledOptionalBundles[room.room] ?? {};
+      for (const group of room.optionalBundleGroups) {
+        const disabledBundleIds = roomDisabledBundles[group.id] ?? [];
+        for (const disabledBundleId of disabledBundleIds) {
+          const bundle = group.bundles.find((b) => b.id === disabledBundleId);
+          if (bundle?.flag) {
+            disabledFlags.push(bundle.flag);
+          }
+        }
+      }
+
+      const roomDisabledOptions =
+        disabledBundleOptionSelections[room.room] ?? {};
+      const bundleMap = bundleByRoomAndId[room.room] ?? {};
+
+      for (const [bundleId, groupSelections] of Object.entries(
+        roomDisabledOptions,
+      )) {
+        const bundleDefinition = bundleMap[bundleId];
+        if (!bundleDefinition) {
+          continue;
+        }
+
+        for (const optionId of Object.values(groupSelections).flat()) {
+          const optionFlag = getOptionFlagForBundle(bundleDefinition, optionId);
+          if (optionFlag) {
+            disabledFlags.push(optionFlag);
+          }
+        }
+      }
+    }
+
     return {
       rooms,
       enabledFlags,
-      disabledFlags: [], // need to setup
+      disabledFlags,
     };
   }, [
     bundleByRoomAndId,
     bundleOptionSelections,
+    disabledBundleOptionSelections,
+    disabledOptionalBundles,
     defaultBundleIdsByRoom,
     roomConfigs,
     selectedOptionalBundles,
@@ -283,11 +451,15 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     selectedOptionalBundles,
     expandedRooms,
     bundleOptionSelections,
+    disabledOptionalBundles,
+    disabledBundleOptionSelections,
     isRemixExpanded,
     isPreviewExpanded,
     payload,
     toggleBundleOption,
+    toggleBundleOptionDisabled,
     selectOptionalBundle,
+    toggleOptionalBundleDisabled,
     toggleRoomExpanded,
     setIsRemixExpanded,
     setIsPreviewExpanded,

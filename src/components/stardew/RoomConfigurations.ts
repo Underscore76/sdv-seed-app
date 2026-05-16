@@ -651,8 +651,8 @@ const ROOM_CONFIGS_1_6: RoomDefinition[] = [
                 ],
               },
               {
-                id: "bulletin-dye-also-purple",
-                label: "Also Purple?",
+                id: "bulletin-dye-pink",
+                label: "Pink",
                 pick: 1,
                 options: [
                   {
