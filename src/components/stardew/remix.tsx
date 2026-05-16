@@ -20,12 +20,40 @@ export default function RemixConfiguration({
   selectOptionalBundle,
   toggleOptionalBundleDisabled,
   toggleRoomExpanded,
+  resetRoomSelections,
 }: RemixConfigurationProps) {
   return (
     <div className="space-y-2">
       {roomConfigs.map((room) => {
         const selectedInGroups = selectedOptionalBundles[room.room] ?? {};
+        const disabledInGroups = disabledOptionalBundles[room.room] ?? {};
         const isExpanded = expandedRooms[room.room] ?? false;
+        const roomBundleSelections = bundleOptionSelections[room.room] ?? {};
+        const roomDisabledBundleSelections =
+          disabledBundleOptionSelections[room.room] ?? {};
+
+        const selectedBundleCount = Object.values(selectedInGroups).reduce(
+          (sum, group) => sum + group.length,
+          0,
+        );
+        const disabledBundleCount = Object.values(disabledInGroups).reduce(
+          (sum, group) => sum + group.length,
+          0,
+        );
+        const selectedItemCount = Object.values(roomBundleSelections).reduce(
+          (bundleSum, groups) =>
+            bundleSum +
+            Object.values(groups).reduce((groupSum, items) => groupSum + items.length, 0),
+          0,
+        );
+        const disabledItemCount = Object.values(
+          roomDisabledBundleSelections,
+        ).reduce(
+          (bundleSum, groups) =>
+            bundleSum +
+            Object.values(groups).reduce((groupSum, items) => groupSum + items.length, 0),
+          0,
+        );
 
         const defaultBundlesWithOptions = room.defaultBundles.filter((bundle) =>
           Boolean(bundle.optionGroups?.length),
@@ -33,12 +61,7 @@ export default function RemixConfiguration({
 
         return (
           <section key={room.room} className="space-y-4 rounded-lg border p-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between rounded-md px-1 py-1 text-left hover:bg-muted"
-              onClick={() => toggleRoomExpanded(room.room)}
-              aria-expanded={isExpanded}
-            >
+            <div className="flex w-full items-center justify-between rounded-md px-1 py-1">
               <div className="flex items-center gap-3">
                 <SpriteBox
                   label={room.room}
@@ -51,22 +74,43 @@ export default function RemixConfiguration({
                     heightOffset: 180,
                   }}
                 />
-                <h3 className="text-base font-semibold">{room.room}</h3>
+                <div className="space-y-0.5">
+                  <h3 className="text-lg font-semibold">{room.room}</h3>
+                  {!isExpanded ? (
+                    <p className="text-xs text-muted-foreground">
+                      Bundles: {selectedBundleCount} selected, {disabledBundleCount} disabled | Items: {selectedItemCount} selected, {disabledItemCount} disabled
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {isExpanded ? "Collapse" : "Expand"}
-              </span>
-            </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted"
+                  onClick={() => resetRoomSelections(room.room)}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted"
+                  onClick={() => toggleRoomExpanded(room.room)}
+                  aria-expanded={isExpanded}
+                >
+                  {isExpanded ? "Collapse" : "Expand"}
+                </button>
+              </div>
+            </div>
 
             {!isExpanded ? null : (
               <>
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">
+                  <h4 className="text-base font-medium text-muted-foreground">
                     Optional Bundle Groups
                   </h4>
                   {room.optionalBundleGroups.map((group) => (
                     <div key={`${room.room}-${group.id}`} className="space-y-0">
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {`Selected:`}{" "}
                         {(selectedInGroups[group.id] ?? []).length} /{" "}
                         {group.pick}
@@ -110,7 +154,7 @@ export default function RemixConfiguration({
                                   group.bundles.length,
                                 );
                               }}
-                              size={48}
+                              size={64}
                             />
                           );
                         })}
@@ -161,7 +205,7 @@ export default function RemixConfiguration({
 
                 {defaultBundlesWithOptions.length > 0 ? (
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground">
+                    <h4 className="text-base font-medium text-muted-foreground">
                       Default Bundle Item Filters
                     </h4>
 

@@ -48,7 +48,7 @@ export default function SpriteToggleButton({
   };
 
   const buttonClasses = [
-    "inline-flex select-none items-center justify-center rounded-md border-2 border-[#7f6a44] p-1",
+    "inline-flex select-none items-center justify-center rounded-md border-2 border-[#7f6a44] p-2",
     "cursor-pointer transition-[transform,box-shadow] duration-[120ms] ease-out",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4b89dc]",
     disabledState

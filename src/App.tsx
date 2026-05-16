@@ -18,7 +18,7 @@ import { ROOM_CONFIGS_1_6 as ROOM_CONFIGS } from "./components/stardew/RoomConfi
 import { useRemixConfigState } from "./components/stardew/useRemixConfigState";
 
 const RESULTS_LIST_HEIGHT = 320;
-const RESULTS_ROW_HEIGHT = 36;
+const RESULTS_ROW_HEIGHT = 44;
 
 type ResultsPanelProps = {
   numbers: number[];
@@ -41,7 +41,7 @@ function ResultsRow({
   const href = `https://mouseypounds.github.io/stardew-predictor/?id=${n}&leg=${resultLegacyRandom ? 1 : 0}`;
 
   return (
-    <div style={style} className="border-b px-3 py-2 text-sm last:border-b-0">
+    <div style={style} className="border-b px-3 py-2 text-base last:border-b-0">
       <a
         href={href}
         target="_blank"
@@ -86,12 +86,12 @@ const ResultsPanel = memo(function ResultsPanel({
   return (
     <section className="space-y-2 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-medium">Results ({numbers.length})</h2>
-        <Button variant="outline" size="sm" onClick={downloadResultsJson}>
+        <h2 className="text-lg font-medium">Results ({numbers.length})</h2>
+        <Button variant="outline" onClick={downloadResultsJson}>
           Download JSON
         </Button>
       </div>
-      <div className="text-xs text-muted-foreground">
+      <div className="text-sm text-muted-foreground">
         Click a seed to view it in MouseyPounds
       </div>
       <div className="rounded-md border">
@@ -254,8 +254,8 @@ function App() {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Remixed Bundle Search</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold">Remixed Bundle Search</h1>
+        <p className="text-base text-muted-foreground">
           Find seeds with specific bundle contents (for version 1.6). Left click
           to select an option, right click to disable an option. If a section
           has less than the pick limit selected:
@@ -288,7 +288,7 @@ function App() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="legacy-random">Use legacy random</Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Enable pre-1.6 random behavior for event calculation.
                     </p>
                   </div>
@@ -319,14 +319,14 @@ function App() {
                 <section className="space-y-2">
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between -mx-1 px-1 rounded-md py-2 text-left hover:bg-muted"
+                    className="flex w-full items-center justify-between rounded-md border bg-card px-3 py-2 text-left shadow-sm transition-colors hover:bg-muted"
                     onClick={() =>
                       remixConfigState.setIsPreviewExpanded((prev) => !prev)
                     }
                     aria-expanded={remixConfigState.isPreviewExpanded}
                   >
                     <h3 className="text-sm font-semibold">Payload Preview</h3>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {remixConfigState.isPreviewExpanded
                         ? "Collapse"
                         : "Expand"}
@@ -335,10 +335,10 @@ function App() {
 
                   {!remixConfigState.isPreviewExpanded ? null : (
                     <>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Payload that will be run
                       </p>
-                      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+                      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-sm">
                         {JSON.stringify(
                           {
                             enabledFlags: remixConfigState.payload.enabledFlags,
@@ -360,7 +360,7 @@ function App() {
                     <Label htmlFor="auto-workers">
                       Use automatic worker count
                     </Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Use maximum number of threads for your system.
                     </p>
                   </div>
@@ -389,7 +389,7 @@ function App() {
                       value={workerCountInput}
                       onChange={(e) => setWorkerCountInput(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {useAutoWorkers
                         ? "Auto mode is enabled."
                         : "Manual mode is enabled."}
@@ -424,10 +424,10 @@ function App() {
                       </p>
                       {searchProgress ? (
                         <>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             Progress: {searchProgress.seedsFound} seeds found
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {searchProgress.processedChunks} chunks scanned (
                             {(
                               (searchProgress.processedChunks /

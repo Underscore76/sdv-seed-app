@@ -48,7 +48,7 @@ export default function BundleOptionGroups({
         key={`${contextKey}-${bundle.id}-${optionGroup.id}`}
         className="space-y-2"
       >
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {bundle.name}
           {optionGroups.length > 1 ? ` - ${optionGroup.label}` : ""}: Selected{" "}
           {selectedOptions.length}
@@ -85,7 +85,7 @@ export default function BundleOptionGroups({
                       optionGroup.options.length,
                     )
                   }
-                  size={44}
+                  size={64}
                 />
               );
             }
@@ -94,7 +94,7 @@ export default function BundleOptionGroups({
               <button
                 key={`${bundle.id}-${optionGroup.id}-${option.id}`}
                 type="button"
-                className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+                className={`rounded-md border px-3 py-2 text-sm transition-colors ${
                   isDisabled
                     ? "border-[#913838] bg-[#a53f3f] text-white opacity-70"
                     : isSelected

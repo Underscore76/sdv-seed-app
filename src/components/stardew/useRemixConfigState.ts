@@ -75,6 +75,40 @@ const getInitialOptionSelections = (
   return result;
 };
 
+const getRoomOptionSelections = (
+  room: RoomDefinition,
+): Record<string, BundleOptionGroupSelections> => {
+  const bundleSelections: Record<string, BundleOptionGroupSelections> = {};
+  const allBundles = [
+    ...room.defaultBundles,
+    ...room.optionalBundleGroups.flatMap((group) => group.bundles),
+  ];
+
+  for (const bundle of allBundles) {
+    const groupSelections: BundleOptionGroupSelections = {};
+
+    for (const optionGroup of bundle.optionGroups ?? []) {
+      groupSelections[optionGroup.id] = [];
+    }
+
+    bundleSelections[bundle.id] = groupSelections;
+  }
+
+  return bundleSelections;
+};
+
+const getRoomOptionalSelections = (
+  room: RoomDefinition,
+): Record<string, string[]> => {
+  const roomGroups: Record<string, string[]> = {};
+
+  for (const group of room.optionalBundleGroups) {
+    roomGroups[group.id] = [];
+  }
+
+  return roomGroups;
+};
+
 export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
   const [selectedOptionalBundles, setSelectedOptionalBundles] =
     useState<OptionalBundleSelectionsByRoom>(() =>
@@ -346,6 +380,36 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     }));
   };
 
+  const resetRoomSelections = (roomName: string) => {
+    const room = roomConfigs.find((config) => config.room === roomName);
+    if (!room) {
+      return;
+    }
+
+    const optionalSelections = getRoomOptionalSelections(room);
+    const optionSelections = getRoomOptionSelections(room);
+
+    setSelectedOptionalBundles((prev) => ({
+      ...prev,
+      [roomName]: optionalSelections,
+    }));
+
+    setDisabledOptionalBundles((prev) => ({
+      ...prev,
+      [roomName]: optionalSelections,
+    }));
+
+    setBundleOptionSelections((prev) => ({
+      ...prev,
+      [roomName]: optionSelections,
+    }));
+
+    setDisabledBundleOptionSelections((prev) => ({
+      ...prev,
+      [roomName]: optionSelections,
+    }));
+  };
+
   const payload = useMemo<RemixSearchPayload>(() => {
     const rooms: RemixRoomPayload[] = roomConfigs.map((room) => {
       const selectedOptionals = selectedOptionalBundles[room.room] ?? {};
@@ -461,6 +525,7 @@ export const useRemixConfigState = (roomConfigs: RoomDefinition[]) => {
     selectOptionalBundle,
     toggleOptionalBundleDisabled,
     toggleRoomExpanded,
+    resetRoomSelections,
     setIsRemixExpanded,
     setIsPreviewExpanded,
   };
