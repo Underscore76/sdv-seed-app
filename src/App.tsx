@@ -12,10 +12,10 @@ import { useThreadSettings } from "./hooks/useThreadSettings";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
-import { Switch } from "./components/ui/switch";
 import RemixConfiguration from "./components/stardew/remix";
 import { ROOM_CONFIGS_1_6 as ROOM_CONFIGS } from "./components/stardew/RoomConfigurations";
 import { useRemixConfigState } from "./components/stardew/useRemixConfigState";
+import ToggleButton from "./components/ui/togglebutton";
 
 const RESULTS_LIST_HEIGHT = 320;
 const RESULTS_ROW_HEIGHT = 44;
@@ -287,16 +287,19 @@ function App() {
               <section className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="legacy-random">Use legacy random</Label>
+                    <Label htmlFor="legacy-random">Legacy random</Label>
                     <p className="text-sm text-muted-foreground">
-                      Enable pre-1.6 random behavior for event calculation.
+                      Whether you want to use Legacy RNG (pseudo v1.5) or New
+                      RNG (v1.6+) (see the checkbox on character creation)
                     </p>
                   </div>
-                  <Switch
+                  <ToggleButton
                     id="legacy-random"
-                    checked={useLegacyRandom}
+                    pressState={useLegacyRandom}
                     disabled={isBusy}
-                    onCheckedChange={setUseLegacyRandom}
+                    onClick={() => setUseLegacyRandom((prev) => !prev)}
+                    onLabel={"Legacy RNG"}
+                    offLabel={"New RNG"}
                   />
                 </div>
 
@@ -357,18 +360,19 @@ function App() {
 
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="auto-workers">
-                      Use automatic worker count
-                    </Label>
+                    <Label htmlFor="auto-workers">Automatic Worker Count</Label>
                     <p className="text-sm text-muted-foreground">
-                      Use maximum number of threads for your system.
+                      When on, use the maximum number of threads for your
+                      system. When off, you can specify the number of workers.
                     </p>
                   </div>
-                  <Switch
+                  <ToggleButton
                     id="auto-workers"
-                    checked={useAutoWorkers}
+                    onLabel="On"
+                    offLabel="Off"
+                    pressState={useAutoWorkers}
                     disabled={isBusy}
-                    onCheckedChange={setUseAutoWorkers}
+                    onClick={() => setUseAutoWorkers((prev) => !prev)}
                   />
                 </div>
 

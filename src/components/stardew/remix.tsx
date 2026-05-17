@@ -3,6 +3,7 @@ import BundleOptionGroups from "./BundleOptionGroups";
 import SpriteBox from "./SpriteBox";
 import JunimoNote from "@/assets/stardew/JunimoNote.png";
 import type { RemixConfigState } from "./useRemixConfigState";
+import ToggleButton from "../ui/togglebutton";
 
 type RemixConfigurationProps = RemixConfigState & {
   roomConfigs: RoomDefinition[];
@@ -99,14 +100,21 @@ export default function RemixConfiguration({
                 >
                   Reset
                 </button>
-                <button
+                <ToggleButton
+                  onLabel="Collapsed"
+                  offLabel="Expand"
+                  pressState={isExpanded}
+                  onClick={() => toggleRoomExpanded(room.room)}
+                  aria-expanded={isExpanded}
+                />
+                {/* <button
                   type="button"
                   className="rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted"
                   onClick={() => toggleRoomExpanded(room.room)}
                   aria-expanded={isExpanded}
                 >
                   {isExpanded ? "Collapse" : "Expand"}
-                </button>
+                </button> */}
               </div>
             </div>
 
