@@ -107,14 +107,6 @@ export default function RemixConfiguration({
                   onClick={() => toggleRoomExpanded(room.room)}
                   aria-expanded={isExpanded}
                 />
-                {/* <button
-                  type="button"
-                  className="rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted"
-                  onClick={() => toggleRoomExpanded(room.room)}
-                  aria-expanded={isExpanded}
-                >
-                  {isExpanded ? "Collapse" : "Expand"}
-                </button> */}
               </div>
             </div>
 
