@@ -57,6 +57,21 @@ public class RemixData : IRemixData
                     new("Construction", "CRAFTS_CONSTRUCTION", CompressedFlags.CRAFTS_CONSTRUCTION),
                     new("Sticky", "CRAFTS_STICKY", CompressedFlags.CRAFTS_STICKY),
                     new("Forest", "CRAFTS_FOREST", CompressedFlags.CRAFTS_FOREST)
+                    {
+                        optionGroups = [
+                            new()
+                            {
+                                id = "crafts-forest-1",
+                                pick = 3,
+                                options = [
+                                    new("Moss", "CRAFTS_FOREST_MOSS", CompressedFlags.CRAFTS_FOREST_MOSS),
+                                    new("771", "CRAFTS_FOREST_FIBER", CompressedFlags.CRAFTS_FOREST_FIBER),
+                                    new("309", "CRAFTS_FOREST_ACORN", CompressedFlags.CRAFTS_FOREST_ACORN),
+                                    new("310", "CRAFTS_FOREST_MAPLE_SEED", CompressedFlags.CRAFTS_FOREST_MAPLE_SEED),
+                                ]
+                            }
+                        ]
+                    }
                 ]
             }
         );
