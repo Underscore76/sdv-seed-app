@@ -85,6 +85,54 @@ public partial class SearchFunctions
 
     [JSExport]
     [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
+    internal static Task<string> InspectRemixSeed(int seed, bool useLegacyRandom, string version)
+    {
+        if (seed < 0)
+        {
+            return Task.FromResult(JsonConvert.SerializeObject(new
+            {
+                status = "invalid_seed",
+                error = "Seed must be a non-negative integer.",
+            }));
+        }
+
+        if (version != "1.6")
+        {
+            return Task.FromResult(JsonConvert.SerializeObject(new
+            {
+                status = "unsupported_version",
+                error = "Only version 1.6 is supported.",
+            }));
+        }
+
+        try
+        {
+            RemixedBundles.SetVersion(version);
+            ICompressedRemixBundles result = RemixedBundles.Generate(useLegacyRandom, seed);
+            List<string> selectedFlags = result.GetFields();
+            selectedFlags.Sort(StringComparer.Ordinal);
+
+            return Task.FromResult(JsonConvert.SerializeObject(new
+            {
+                status = "ok",
+                seed,
+                useLegacyRandom,
+                version,
+                selectedFlags,
+            }));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(JsonConvert.SerializeObject(new
+            {
+                status = "failed",
+                error = ex.Message,
+            }));
+        }
+    }
+
+    [JSExport]
+    [RequiresUnreferencedCode("Calls Newtonsoft.Json.JsonConvert.SerializeObject(Object)")]
     internal static Task<string> GetSeedSearchStatus(string searchId)
     {
         if (!SeedSearchJobs.TryGetValue(searchId, out SeedSearchJob job))

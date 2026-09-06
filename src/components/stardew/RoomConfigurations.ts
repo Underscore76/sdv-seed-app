@@ -447,7 +447,7 @@ const ROOM_CONFIGS_1_6: RoomDefinition[] = [
           {
             id: "Specialty Fish",
             name: "Specialty Fish",
-            flag: "FISH_SPECIALITY",
+            flag: "FISH_SPECIALTY",
           },
           { id: "Quality Fish", name: "Quality Fish", flag: "FISH_QUALITY" },
           {
