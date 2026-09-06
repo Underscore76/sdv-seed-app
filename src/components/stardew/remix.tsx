@@ -4,6 +4,7 @@ import SpriteBox from "./SpriteBox";
 import JunimoNote from "@/assets/stardew/JunimoNote.png";
 import type { RemixConfigState } from "./useRemixConfigState";
 import ToggleButton from "../ui/togglebutton";
+import { Button } from "../ui/button";
 
 type RemixConfigurationProps = RemixConfigState & {
   roomConfigs: RoomDefinition[];
@@ -93,13 +94,13 @@ export default function RemixConfiguration({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => resetRoomSelections(room.room)}
                 >
                   Reset
-                </button>
+                </Button>
                 <ToggleButton
                   onLabel="Collapsed"
                   offLabel="Expand"
